@@ -18,99 +18,86 @@ from mani_skill.utils.structs.types import SceneConfig, SimConfig
 from mani_skill.examples.real2sim_3d_assets import ASSET_3D_PATH, REAL2SIM_3D_ASSETS_PATH, CONTAINER_3D_PATH
 from mani_skill.utils.geometry.rotation_conversions import matrix_to_quaternion
 
-
-
-def get_objs_random_pose(
-    xy_center, half_edge_length_x, half_edge_length_y,
-    z_value, extents_x, extents_y, quats, overlap_ratio=0.9,max_attemp=50
-):
-    """
-    在指定视野范围内生成源对象和目标对象的随机位姿（位置和方向）。
-
-    参数:
-        xy_center (np.ndarray): 源对象和目标对象的中心点坐标，形状为 (2, 2)。
-        half_edge_length_x (np.ndarray): 源对象和目标对象在 x 方向的半边长，形状为 (2,)。
-        half_edge_length_y (np.ndarray): 源对象和目标对象在 y 方向的半边长，形状为 (2,)。
-        z_value (np.ndarray): 源对象和目标对象的 z 坐标，形状为 (2,)。
-        extents_x (list): 源对象和目标对象在 x 方向的尺寸。
-        extents_y (list): 源对象和目标对象在 y 方向的尺寸。
-        quats (list): 源对象和目标对象的四元数方向。
-        overlap_ratio (float): 源对象和目标对象的重叠比例，默认值为 0.9。
-
-    返回:
-        tuple: 源对象和目标对象的随机位置和方向。
-    """
-    # 随机生成源对象的位置
-    source_x = np.random.uniform(
-        xy_center[0, 0] - half_edge_length_x[0],
-        xy_center[0, 0] + half_edge_length_x[0]
-    )
-    source_y = np.random.uniform(
-        xy_center[0, 1] - half_edge_length_y[0],
-        xy_center[0, 1] + half_edge_length_y[0]
-    )
-    source_z = z_value[0]
-    source_obj_xyz = np.array([source_x, source_y, source_z])
-
-    # 随机生成目标对象的位置
-    target_x = np.random.uniform(
-        xy_center[1, 0] - half_edge_length_x[1],
-        xy_center[1, 0] + half_edge_length_x[1]
-    )
-    target_y = np.random.uniform(
-        xy_center[1, 1] - half_edge_length_y[1],
-        xy_center[1, 1] + half_edge_length_y[1]
-    )
-    target_z = z_value[1]
-    target_obj_xyz = np.array([target_x, target_y, target_z])
-    count = 0
-    # 检查重叠比例，确保源对象和目标对象不会过度重叠
-    for _ in range(max_attemp):
-        if np.abs(source_x - target_x) < overlap_ratio * (extents_x[0] + extents_x[1]) and \
-           np.abs(source_y - target_y) < overlap_ratio * (extents_y[0] + extents_y[1]):
-            print("重叠，重新生成目标对象位置....")
-            count += 1
-            target_x = np.random.uniform(
-                xy_center[1, 0] - half_edge_length_x[1],
-                xy_center[1, 0] + half_edge_length_x[1]
-            )
-            target_y = np.random.uniform(
-                xy_center[1, 1] - half_edge_length_y[1],
-                xy_center[1, 1] + half_edge_length_y[1]
-            )
-            target_obj_xyz = np.array([target_x, target_y, target_z])
-        else:
-            break
-        
-    # while np.abs(source_x - target_x) < overlap_ratio * (extents_x[0] + extents_x[1]) and \
-    #       np.abs(source_y - target_y) < overlap_ratio * (extents_y[0] + extents_y[1]):
-    #     if count > 50:
-    #         break
-    #     print("重叠，重新生成目标对象位置....")
-    #     count += 1
-    #     target_x = np.random.uniform(
-    #         xy_center[1, 0] - half_edge_length_x[1],
-    #         xy_center[1, 0] + half_edge_length_x[1]
-    #     )
-    #     target_y = np.random.uniform(
-    #         xy_center[1, 1] - half_edge_length_y[1],
-    #         xy_center[1, 1] + half_edge_length_y[1]
-    #     )
-    #     target_obj_xyz = np.array([target_x, target_y, target_z])
-
-    # 设置四元数方向
-    source_obj_quat = quats[0] if quats[0] is not None else np.array([1.0, 0.0, 0.0, 0.0])
-    target_obj_quat = quats[1] if quats[1] is not None else np.array([1.0, 0.0, 0.0, 0.0])
-
-    return source_obj_xyz, source_obj_quat, target_obj_xyz, target_obj_quat
-   
-   
-   
-OBJ_NAME_LIST = ["pear_1","pear_2", "pear_3",  "lemon_0", "lemon_1", "lemon_2", "lemon_3","lime_0","lime_1","lime_2"]
+OBJ_NAME_LIST = ["pear_1","pear_2", "pear_3",  "lemon_0", "lemon_1", "lemon_2", "lemon_3","lime_0","lime_1","lime_2","banana_1","banana_2"]
 ASSET_EVALUATE_JSON_PATH = "/mnt/data/liy/projects/maniskill_project/3d_asset_branch/ManiSkill/mani_skill/examples/real2sim_3d_assets/vla_evaluate_task.json"
 ASSET_BASE_PATH = "/mnt/data/liy/projects/VLABench/VLABench/assets/obj/meshes"
 
 
+
+def generate_random_pos(xy_center, z, half_edge_x, half_edge_y):
+    """
+    在矩形区域内生成随机坐标点
+    参数:
+        xy_center (np.array): 中心点的x、y坐标 [x_center, y_center]
+        z (float): 固定的z坐标值
+        half_edge_x (float): x轴半边长（范围的一半）
+        half_edge_y (float): y轴半边长（范围的一半）
+    返回:
+        np.array: 随机生成的 [x, y, z] 坐标
+    """
+    # 生成x坐标：中心点 ± 半长范围内的随机值
+    x = np.random.uniform(xy_center[0] - half_edge_x, xy_center[0] + half_edge_x)
+    # 生成y坐标：中心点 ± 半长范围内的随机值
+    y = np.random.uniform(xy_center[1] - half_edge_y, xy_center[1] + half_edge_y)
+    # 返回 [x, y, z]
+    return np.array([x, y, z])    
+
+
+def get_objs_random_pose(xy_center, half_edge_length_x, half_edge_length_y, z_value, extents_x, extents_y, quats, threshold_scale=1.0):
+
+    # quat = randomization.random_quaternions(b, lock_x=True, lock_y=True)
+    xy_center = np.array(xy_center)
+    half_edge_length_x = np.array(half_edge_length_x)
+    half_edge_length_y = np.array(half_edge_length_y)
+    z_value = np.array(z_value)
+    extents_x = np.array(extents_x)
+    extents_y = np.array(extents_y)
+
+    if np.linalg.norm([half_edge_length_x[0], half_edge_length_y[0]]) >= np.linalg.norm([half_edge_length_x[1], half_edge_length_y[1]]):
+        first_idx, second_idx = 1, 0  
+    else:
+        first_idx, second_idx = 0, 1
+
+    half_extents_x = extents_x / 2.0
+    half_extents_y = extents_y / 2.0
+
+    # threshold = threshold_scale * (max(half_extents_x) + max(half_extents_y)) # 规则长方体/正方体
+    threshold = threshold_scale * np.linalg.norm([2 * max(half_extents_x), 2 * max(half_extents_y)]) # 物体的形状不规则
+    # threshold = 0.8 * np.mean([half_extents_x[0] + half_extents_x[1], half_extents_y[0] + half_extents_y[1]]) # 物体大小相差比较大
+    first_obj_xyz = generate_random_pos(xy_center[first_idx], z_value[first_idx], half_edge_length_x[first_idx], half_edge_length_y[first_idx])
+
+    max_attempts = 1000
+    max_distance = -np.inf
+    best_obj_xyz = None 
+    for _ in range(max_attempts):
+        candidate_obj_xyz = generate_random_pos(
+            xy_center[second_idx], z_value[second_idx],
+            half_edge_length_x[second_idx], half_edge_length_y[second_idx]
+        )
+        distance = np.linalg.norm(candidate_obj_xyz[:2] - first_obj_xyz[:2])
+        
+        if distance > max_distance:
+            max_distance = distance
+            best_obj_xyz = candidate_obj_xyz
+        if distance >= threshold:
+            break
+
+    second_obj_xyz = best_obj_xyz if best_obj_xyz is not None else candidate_obj_xyz
+    if first_idx == 0:
+        source_obj_xyz = first_obj_xyz
+        target_obj_xyz = second_obj_xyz
+    else:
+        source_obj_xyz = second_obj_xyz
+        target_obj_xyz = first_obj_xyz
+
+    quats = np.array([np.array(quat) if quat is not None else euler2quat(0, 0, np.random.uniform(-np.pi, np.pi),"sxyz") for quat in quats])
+
+    source_obj_quat = quats[0]
+    target_obj_quat= quats[1]
+
+    return torch.from_numpy(source_obj_xyz), torch.from_numpy(source_obj_quat), torch.from_numpy(target_obj_xyz), torch.from_numpy(target_obj_quat)  
+   
+   
 def parse_asset_json_file(source_idx):
     """
     Parse the asset json file and return the mjcf_path, texture_path, obj_path, scale, obj_name
@@ -139,7 +126,7 @@ class AssetsPickEnvBench(BaseEnv):
     agent: PandaWristCam
     
     def __init__(self, *args, robot_uids="panda_wristcam", **kwargs):
-        self.object_name = kwargs.pop("object_name", "lemon_0")
+        self.object_name = kwargs.pop("object_name", "banana_1")
         self.container_name = kwargs.pop("container_name", "bowl")
 
         self.object = {"name":[],"actor":[]}
