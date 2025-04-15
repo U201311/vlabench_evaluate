@@ -1,0 +1,6 @@
+ASSET_3D_PATH = "/mnt/data/liy/projects/maniskill_project/3d_asset_branch/ManiSkill/3d_assets/pick_asset"
+CONTAINER_3D_PATH = "/mnt/data/liy/projects/maniskill_project/3d_asset_branch/ManiSkill/3d_assets/3d_container"
+VLA_BENCH_3D_PATH = "/mnt/data/liy/projects/VLABench/VLABench/assets/obj/meshes/breads/bagel/bagel_0"
+REAL2SIM_3D_ASSETS_PATH = "/mnt/data/liy/projects/maniskill_project/3d_asset_branch/ManiSkill/mani_skill/examples/real2sim_3d_assets/assets_scale.json"
+VLA_MJCF_PATH="/mnt/data/liy/projects/VLABench/VLABench/assets/obj/meshes"
+VLA_ASSETS_OBJ_TEXTURE_PATH="/mnt/data/liy/projects/maniskill_project/3d_asset_branch/ManiSkill/mani_skill/examples/real2sim_3d_assets/vla_asset_class_name.json"
